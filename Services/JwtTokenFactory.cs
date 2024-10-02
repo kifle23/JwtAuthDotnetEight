@@ -9,7 +9,7 @@ namespace JwtAuthDotnetEight.Services
 {
     public class JwtTokenFactory(IConfiguration config, IUserRepository userRepository) : ITokenFactory
     {
-        private readonly string _secretKey = config["JwtSettings:Secret"] ?? throw new ArgumentNullException("JwtSettings:Secret", "Secret key cannot be null");
+        private readonly string _secretKey = config.GetSection("AppSettings:Token")?.Value ?? throw new ArgumentNullException("AppSettings:Token", "Secret key cannot be null");
         private readonly IUserRepository _userRepository = userRepository;
 
         public string CreateToken(User user)
