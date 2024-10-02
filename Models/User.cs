@@ -6,5 +6,8 @@ namespace JwtAuthDotnetEight.Models
         public required string Username { get; set; }
         public required string PasswordHash { get; set; }
 
+         public ICollection<UserRole>? UserRoles { get; set; }
+
+
     }
 }
