@@ -1,5 +1,6 @@
 using JwtAuthDotnetEight.Data;
 using JwtAuthDotnetEight.Models;
+using JwtAuthDotnetEight.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace JwtAuthDotnetEight.Extensions
@@ -27,13 +28,13 @@ namespace JwtAuthDotnetEight.Extensions
                     var adminUser = new User
                     {
                         Username = "admin",
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("password")
+                        PasswordHash = PasswordHasher.HashPassword("password")
                     };
 
                     var normalUser = new User
                     {
                         Username = "user",
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("password")
+                        PasswordHash = PasswordHasher.HashPassword("password")
                     };
 
                     context.Users.AddRange(adminUser, normalUser);

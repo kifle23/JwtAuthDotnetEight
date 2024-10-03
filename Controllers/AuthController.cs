@@ -2,6 +2,7 @@ using JwtAuthDotnetEight.Attributes;
 using JwtAuthDotnetEight.Dtos;
 using JwtAuthDotnetEight.Repositories;
 using JwtAuthDotnetEight.Services;
+using JwtAuthDotnetEight.Utilities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JwtAuthDotnetEight.Controllers
@@ -17,7 +18,7 @@ namespace JwtAuthDotnetEight.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             var user = await _userRepository.GetUserByUsernameAsync(loginDto.Username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+            if (user == null || !PasswordHasher.VerifyPassword(loginDto.Password, user.PasswordHash))
             {
                 return Unauthorized();
             }
