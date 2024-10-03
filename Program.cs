@@ -11,10 +11,11 @@ builder.Services.AddSwaggerConfiguration()
 
 var app = builder.Build();
 
-app.UseSwaggerDocumentation()
+app.UseErrorHandlingMiddleware()
    .SeedDatabase()
    .UseJwtMiddleware()
-   .AddAuthMiddlewares();
+   .AddAuthMiddlewares()
+   .UseSwaggerDocumentation();
 
 app.MapControllers();
 app.UseHttpsRedirection();
