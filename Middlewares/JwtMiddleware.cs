@@ -9,7 +9,8 @@ namespace JwtAuthDotnetEight.Middlewares
         public async Task InvokeAsync(HttpContext context, ITokenFactory tokenFactory)
         {
             var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
-            if (token != null)
+
+            if (!string.IsNullOrEmpty(token))
             {
                 var principal = tokenFactory.ValidateToken(token);
                 if (principal != null)
