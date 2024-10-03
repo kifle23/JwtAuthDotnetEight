@@ -11,7 +11,6 @@ namespace JwtAuthDotnetEight.Extensions
             .AddJwtBearer(options =>
             {
                 var secret = configuration["AppSettings:Token"];
-                Console.WriteLine($"JWT Secret: {secret}");
                 if (string.IsNullOrEmpty(secret))
                 {
                     throw new InvalidOperationException("JWT Secret is not configured.");

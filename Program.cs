@@ -13,6 +13,7 @@ var app = builder.Build();
 
 app.UseSwaggerDocumentation()
    .SeedDatabase()
+   .UseJwtMiddleware()
    .AddAuthMiddlewares();
 
 app.MapControllers();
