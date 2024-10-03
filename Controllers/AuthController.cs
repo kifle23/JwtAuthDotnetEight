@@ -1,7 +1,7 @@
+using JwtAuthDotnetEight.Attributes;
 using JwtAuthDotnetEight.Dtos;
 using JwtAuthDotnetEight.Repositories;
 using JwtAuthDotnetEight.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JwtAuthDotnetEight.Controllers
@@ -26,21 +26,21 @@ namespace JwtAuthDotnetEight.Controllers
             return Ok(new { Token = token });
         }
 
-        [Authorize(Roles = "Admin")]
+        [RolesAuthorize("Admin")]
         [HttpGet("admin-endpoint")]
         public IActionResult AdminOnly()
         {
             return Ok("Admin access granted.");
         }
 
-        [Authorize(Roles = "Admin,User")]
+        [RolesAuthorize("Admin", "User")]
         [HttpGet("admin-or-user-endpoint")]
         public IActionResult AdminUser()
         {
             return Ok("Admin Or User access granted.");
         }
 
-        [Authorize(Roles = "User")]
+        [RolesAuthorize("User")]
         [HttpGet("user-endpoint")]
         public IActionResult NormalUser()
         {
