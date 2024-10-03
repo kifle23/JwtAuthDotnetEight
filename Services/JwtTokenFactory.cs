@@ -36,6 +36,28 @@ namespace JwtAuthDotnetEight.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        public ClaimsPrincipal? ValidateToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_secretKey);
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                }, out SecurityToken validatedToken);
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 
 }
