@@ -118,8 +118,6 @@ This endpoint is accessible only by users with the `User` role.
 
 - **Unauthorized (401 Unauthorized, 403 Forbidden)**
 
----
-
 ## Configure the Environment
 
 1. **Set the JWT Secret Key**  
