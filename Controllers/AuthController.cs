@@ -23,7 +23,7 @@ namespace JwtAuthDotnetEight.Controllers
                 return Unauthorized();
             }
 
-            var token = _tokenFactory.CreateToken(user);
+            var token = _tokenFactory.CreateTokenAsync(user);
             return Ok(new { Token = token });
         }
 

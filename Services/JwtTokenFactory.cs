@@ -12,9 +12,9 @@ namespace JwtAuthDotnetEight.Services
         private readonly string _secretKey = config.GetSection("AppSettings:Token")?.Value ?? throw new ArgumentNullException("AppSettings:Token", "Secret key cannot be null");
         private readonly IUserRepository _userRepository = userRepository;
 
-        public string CreateToken(User user)
+        public async Task<string> CreateTokenAsync(User user)
         {
-            var roles = _userRepository.GetUserRolesAsync(user.Id).Result;
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
 
             var claims = new List<Claim>
             {
