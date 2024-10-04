@@ -13,12 +13,6 @@ namespace JwtAuthDotnetEight.Extensions
 
             return services;
         }
-        public static WebApplication AddAuthMiddlewares(this WebApplication app)
-        {
-            app.UseAuthentication();
-            app.UseAuthorization();
-            return app;
-        }
     }
 
 }

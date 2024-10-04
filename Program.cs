@@ -13,8 +13,7 @@ var app = builder.Build();
 
 app.UseErrorHandlingMiddleware()
    .SeedDatabase()
-   .UseJwtMiddleware() // Intercepts the request to validate JWT tokens; this step is optional
-   .AddAuthMiddlewares()
+   .UseJwtMiddleware()
    .UseSwaggerDocumentation();
 
 app.MapControllers();
