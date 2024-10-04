@@ -212,7 +212,7 @@ You can test the API using Swagger or any API testing tool such as Postman.
 1. Run the application.
 2. Open your browser and navigate to [http://localhost:5088/swagger/index.html](http://localhost:5088/swagger/index.html).
 3. Use the Swagger UI to explore and test the API endpoints.
-4. Open your browser and navigate to [Example swagger usage](https://drive.google.com/file/d/1zOx5n3BofZh5oyEAlYdue0L47kwckyqB/view?usp=sharing).
+4. [Demo using swagger](https://drive.google.com/file/d/1zOx5n3BofZh5oyEAlYdue0L47kwckyqB/view?usp=sharing).
 
 #### Using Postman or Other Tools
 
