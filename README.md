@@ -30,7 +30,7 @@ The following configurations are used for setting up JWT authentication and role
 - **Service Registration**: Register required service extentions including controllers, Swagger, database context, dependency injection, and JWT authentication.
 - **Middleware Setup**: Configure the middleware pipeline to handle errors, seed the database, apply JWT authentication, and set up Swagger documentation.
 
-### Endpoints
+## Endpoints
 
 **POST** `/api/auth/login`  
 This endpoint allows users to log in by providing their username and password. If the credentials are valid, a JWT token is returned.
@@ -118,7 +118,9 @@ This endpoint is accessible only by users with the `User` role.
 
 - **Unauthorized (401 Unauthorized, 403 Forbidden)**
 
-### Configure the Environment
+---
+
+## Configure the Environment
 
 1. **Set the JWT Secret Key**  
     The application uses an environment variable for the JWT secret key. You can configure this using the `setx` command on Windows.
@@ -148,9 +150,42 @@ This endpoint is accessible only by users with the `User` role.
    dotnet ef database update
    ```
 
-### Usage
+## Database Requirements
 
-To run the project, use the following command: **dotnet run**
+The application uses Entity Framework Core for data access with a code-first approach. Below are the essential database components:
+
+1. **User Table**: Stores user details such as username and password hash.
+2. **Role Table**: Defines different roles available in the application (e.g., Admin, User).
+3. **UserRole Table**: Maps users to their respective roles.
+
+### Example Database Schema
+
+```sql
+CREATE TABLE Users (
+    Id INT PRIMARY KEY IDENTITY,
+    Username NVARCHAR(50) NOT NULL,
+    PasswordHash NVARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Roles (
+    Id INT PRIMARY KEY IDENTITY,
+    Name NVARCHAR(50) NOT NULL
+);
+
+CREATE TABLE UserRoles (
+    UserId INT FOREIGN KEY REFERENCES Users(Id),
+    RoleId INT FOREIGN KEY REFERENCES Roles(Id),
+    PRIMARY KEY (UserId, RoleId)
+);
+```
+
+## Usage
+
+To run the project, use the following command:
+
+```sh
+dotnet run
+```
 
 ### Seeded User Credentials
 
