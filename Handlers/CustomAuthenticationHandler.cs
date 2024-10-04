@@ -9,12 +9,8 @@ namespace JwtAuthDotnetEight.Handlers
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        IConfiguration config,
         ITokenFactory tokenFactory) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
     {
-        private readonly string _secretKey = config["AppSettings:Token"]
-            ?? throw new ArgumentNullException("AppSettings:Token", "Secret key cannot be null");
-
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var authHeader = Request.Headers.Authorization.ToString();

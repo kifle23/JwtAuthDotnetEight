@@ -10,7 +10,7 @@ namespace JwtAuthDotnetEight.Middlewares
 
         public async Task InvokeAsync(HttpContext context, ITokenFactory tokenFactory)
         {
-            var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+            var token = GetTokenFromHeader(context);
 
             if (!string.IsNullOrEmpty(token))
             {
@@ -18,6 +18,11 @@ namespace JwtAuthDotnetEight.Middlewares
                 if (principal != null)
                 {
                     context.User = principal;
+                }
+                else
+                {
+                    await HandleUnauthorized(context, "Unauthorized: Invalid or expired token.");
+                    return;
                 }
             }
 
@@ -34,15 +39,42 @@ namespace JwtAuthDotnetEight.Middlewares
 
                         if (!rolesRequired.Any(role => userRoles.Contains(role)))
                         {
-                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                            await context.Response.WriteAsync("Forbidden: You do not have access to this resource.");
+                            await HandleForbidden(context);
                             return;
                         }
                     }
                 }
             }
+            else
+            {
+                var endpoint = context.GetEndpoint();
+                var rolesRequired = endpoint?.Metadata.GetMetadata<RolesAuthorizeAttribute>()?.Roles;
+
+                if (rolesRequired != null && rolesRequired.Length > 0)
+                {
+                    await HandleUnauthorized(context, "Unauthorized: Authentication is required.");
+                    return;
+                }
+            }
 
             await _next(context);
+        }
+
+        private static string? GetTokenFromHeader(HttpContext context)
+        {
+            return context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+        }
+
+        private static async Task HandleUnauthorized(HttpContext context, string message)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsync(message);
+        }
+
+        private static async Task HandleForbidden(HttpContext context)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsync("Forbidden: You do not have access to this resource.");
         }
     }
 }
