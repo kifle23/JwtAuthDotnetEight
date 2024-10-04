@@ -1,4 +1,6 @@
+using JwtAuthDotnetEight.Attributes;
 using JwtAuthDotnetEight.Services;
+using System.Security.Claims;
 
 namespace JwtAuthDotnetEight.Middlewares
 {
@@ -16,6 +18,27 @@ namespace JwtAuthDotnetEight.Middlewares
                 if (principal != null)
                 {
                     context.User = principal;
+                }
+            }
+
+            if (context.User.Identity?.IsAuthenticated == true)
+            {
+                var endpoint = context.GetEndpoint();
+                if (endpoint != null)
+                {
+                    var rolesRequired = endpoint.Metadata.GetMetadata<RolesAuthorizeAttribute>()?.Roles;
+
+                    if (rolesRequired != null && rolesRequired.Length > 0)
+                    {
+                        var userRoles = context.User.FindAll(ClaimTypes.Role).Select(r => r.Value);
+
+                        if (!rolesRequired.Any(role => userRoles.Contains(role)))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            await context.Response.WriteAsync("Forbidden: You do not have access to this resource.");
+                            return;
+                        }
+                    }
                 }
             }
 

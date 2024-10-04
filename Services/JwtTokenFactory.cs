@@ -17,9 +17,9 @@ namespace JwtAuthDotnetEight.Services
             var roles = _userRepository.GetUserRolesAsync(user.Id).Result;
 
             var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, user.Username)
-        };
+            {
+                new(ClaimTypes.Name, user.Username)
+            };
 
             foreach (var role in roles)
             {
