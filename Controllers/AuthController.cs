@@ -4,6 +4,7 @@ using JwtAuthDotnetEight.Repositories;
 using JwtAuthDotnetEight.Services;
 using JwtAuthDotnetEight.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using JwtAuthDotnetEight.Models;
 
 namespace JwtAuthDotnetEight.Controllers
 {
@@ -17,35 +18,32 @@ namespace JwtAuthDotnetEight.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _userRepository.GetUserByUsernameAsync(loginDto.Username);
+            var user = await _userRepository.FindByUsernameAsync(loginDto.Username);
             if (user == null || !PasswordHasher.VerifyPassword(loginDto.Password, user.PasswordHash))
             {
                 return Unauthorized();
             }
 
-            var token = _tokenFactory.CreateTokenAsync(user);
-            return Ok(new { Token = token });
+            var token = await _tokenFactory.CreateTokenAsync(user);
+            return Ok(new { token });
         }
 
-        [RolesAuthorize("Admin")]
-        [HttpGet("admin-endpoint")]
-        public IActionResult AdminOnly()
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            return Ok("Admin access granted.");
-        }
+            if (await _userRepository.FindByUsernameAsync(registerDto.Username) != null)
+                return Conflict("Username already exists");
+            if (await _userRepository.FindByEmailAsync(registerDto.Email) != null)
+                return Conflict("Email already exists");
 
-        [RolesAuthorize("Admin", "User")]
-        [HttpGet("admin-or-user-endpoint")]
-        public IActionResult AdminUser()
-        {
-            return Ok("Admin Or User access granted.");
-        }
-
-        [RolesAuthorize("User")]
-        [HttpGet("user-endpoint")]
-        public IActionResult NormalUser()
-        {
-            return Ok("User access granted.");
+            var user = new User
+            {
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                PasswordHash = PasswordHasher.HashPassword(registerDto.Password)
+            };
+            await _userRepository.AddUserAsync(user, registerDto.Role);
+            return Created($"/api/users/{user.Id}", new { user.Id, user.Username, user.Email });
         }
 
     }

@@ -24,5 +24,43 @@ namespace JwtAuthDotnetEight.Repositories
                 .Select(ur => ur.Role.Name)
                 .ToListAsync();
         }
+
+        public Task<User?> FindByUsernameAsync(string username)
+        {
+            return _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        public Task<User?> FindByEmailAsync(string email)
+        {
+            return _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task AddUserAsync(User user, string roleName)
+        {
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+            if (role == null)
+            {
+                role = new Role { Name = roleName };
+                _context.Roles.Add(role);
+                await _context.SaveChangesAsync();
+            }
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            _context.UserRoles.Add(new UserRole
+            {
+                UserId = user.Id,
+                RoleId = role.Id,
+                User = user,
+                Role = role
+            });
+            await _context.SaveChangesAsync();
+        }
+
+        public Task<List<User>> GetAllUsersAsync()
+        {
+            return _context.Users.AsNoTracking().ToListAsync();
+        }
     }
 }

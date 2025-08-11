@@ -14,17 +14,25 @@ namespace JwtAuthDotnetEight.Handlers
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var authHeader = Request.Headers.Authorization.ToString();
+            string? token = null;
 
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult(AuthenticateResult.NoResult());
+                token = authHeader["Bearer ".Length..].Trim();
             }
-
-            var token = authHeader["Bearer ".Length..].Trim();
+            else
+            {
+                var accessToken = Request.Query["access_token"].ToString();
+                var isHubPath = Request.Path.StartsWithSegments("/hub");
+                if (!string.IsNullOrEmpty(accessToken) && isHubPath)
+                {
+                    token = accessToken;
+                }
+            }
 
             if (string.IsNullOrEmpty(token))
             {
-                return Task.FromResult(AuthenticateResult.Fail("Token is missing"));
+                return Task.FromResult(AuthenticateResult.NoResult());
             }
 
             var principal = tokenFactory.ValidateToken(token);

@@ -1,240 +1,193 @@
+# Task Management
+
+Full‑stack Task Management System:
+- Backend: ASP.NET Core 8 (Web API, EF Core, JWT auth, SignalR)
+- Frontend: React (Vite + TypeScript + Tailwind)
+- Demo: [Demo.webm](./Demo.webm)
+
+## Backend
+
+Key endpoints
+- POST /api/auth/register
+- POST /api/auth/login
+- GET /api/users
+- GET /api/tasks?status=&assignee=&search=
+- POST /api/tasks
+- PUT /api/tasks/{id}
+- DELETE /api/tasks/{id}
+
+Seed data
+- admin@example.com / password (Admin)
+- user@example.com / password (User)
+- When system uses InMemory database - sample tasks
+
+Notes
+- Set AppSettings:Token in appsettings.json for JWT.
+
+### Configuration
+
+- Port: http://localhost:5099 (see Properties/launchSettings.json)
+- Database: InMemory by default (Extensions/DatabaseExtensions.cs). To use SQL Server, set `UseInMemory=false` and provide `ConnectionStrings:DevDB` in appsettings.json.
+- JWT Secret: set `AppSettings:Token` in appsettings.json or as an environment variable.
+
+## Frontend
+
+- Dev server: Vite (typically http://localhost:5173)
+- Env: set `VITE_API_BASE=http://localhost:5099` and `VITE_SIGNALR_HUB=/hub/tasks` if needed
+- Features: Login/Register, task board with DnD, filters (status/assignee/search), create/edit/delete, realtime updates via SignalR, form validation via react-hook-form + zod, lazy‑loaded routes and modals, toasts and confirm dialog.
+
+## Run it
+
+1) API
+   - From repo root:
+     - dotnet run --launch-profile http
+   - Swagger: http://localhost:5099/swagger/index.html
+
+2) Client
+   - cd client
+   - npm ci
+   - npm run dev
+
+## Tests
+
+- Unit tests (services) and integration tests (API CRUD, filters, and SignalR hub events):
+  - From repo root: dotnet test
+
+![alt text](image.png)
+
+## Compliance and Originality
+
+- No pre built task templates were used. The board UI, controllers, services, middleware, and tests were authored for this assignment.
+- No code was copied from tutorials; only the bare Vite scaffold was used to create a React app shell.
+- Dependencies are minimal and justified:
+  - react, react-dom, react-router-dom: core UI and routing
+  - axios: HTTP client
+  - @reduxjs/toolkit, react-redux: small auth state and app state
+  - @microsoft/signalr: realtime updates
+  - @hello-pangea/dnd: drag-and-drop on the board
+  - tailwindcss (+ @tailwindcss/postcss, autoprefixer): styling
+  - react-hook-form, zod: lightweight forms and validation
+
+### Design choices
+
+- DTO projection at controller boundary: avoids JSON reference cycles and decouples API shape from EF entities; also aligns with SignalR event payloads.
+- System.Text.Json with IgnoreCycles + string enums: stable, camelCase, readable payloads.
+- SignalR payload normalization: hub events use the same flat shape as HTTP responses for easy client reuse.
+- Upsert on create (client): prevents duplicates when both POST response and hub event arrive.
+- Drag and drop via @hello-pangea/dnd: small, actively maintained DnD library focused on React.
+- Forms via react-hook-form + zod: minimal runtime and strong typed validation without heavy dependencies.
+- Lazy-loaded routes and modals: reduces initial bundle and improves perceived performance.
+- Toasts + confirm dialog: consistent UX feedback without third-party UI kits.
+- Auth timer scheduling in App shell: avoids side effects in reducers; single place to manage auto-logout.
+
+## Reset to seed data
+
+Seeding runs in `Extensions/DatabaseExtensions.SeedDatabase()`.
+
+- InMemory (default in Development): restart the API; the in-memory store is new each run and seeds automatically.
+- SQL Server (persistent): set `UseInMemory=false` and ensure `ConnectionStrings:DevDB` is valid. To reseed:
+  - Drop the database (e.g., `AuthDB`) and restart the API, or
+  - Delete data in order (Tasks -> UserRoles -> Users -> Roles) so `Users` becomes empty, then restart the API.
+
+## Troubleshooting
+
+Client dev server (Vite) fails to start
+- Ensure Node 18+ is installed. Run `node -v`.
+- From `client/`: run `npm ci` to install exact dependencies, then `npm run dev`.
+- If port 5173 is busy, Vite will pick the next port (e.g., 5174). CORS allows common dev ports.
+
+API fails to run
+- Confirm `AppSettings:Token` is set (see appsettings.json or environment variable). The repo includes a default for development.
+- If using SQL Server and migrations aren’t applied, either switch to InMemory (`UseInMemory=true`) or run EF migrations.
+- Swagger URL: http://localhost:5099/swagger/index.html. If 5099 is taken, check `Properties/launchSettings.json`.
+
+SignalR not connecting
+- Verify the client env: `VITE_API_BASE` and `VITE_SIGNALR_HUB`.
+- Check browser console for CORS/auth errors; ensure JWT is present when connecting.
+
 # JWT Authentication and Authorization in .NET 8.0 Core
 
 ## Overview
 
-This project implements user authentication and role-based authorization using JSON Web Tokens (JWT) in a .NET 8.0 Core web application. The goal is to provide secure access to API endpoints based on user roles without relying on built-in .NET functionalities.
+This project uses JSON Web Tokens (JWT) with a custom middleware and attribute-based roles to protect API endpoints and the SignalR hub. Tokens are issued on login and include role claims; roles are enforced via a custom `[RolesAuthorize]` attribute.
 
 ## Features
 
-- **JWT Token Generation and Validation**: Securely generate and validate JWT tokens for user authentication.
-- **Role-Based Authorization**: Protect specific API endpoints to ensure they are accessible only to users with defined roles (e.g., Admin, User).
-- **Custom Authentication Handler**: Implement a custom authentication handler for handling JWT authentication.
-- **Middleware for Token Validation**: Middleware to validate JWT tokens in incoming requests.
+- JWT token issuance on login and validation on each request
+- Custom JWT authentication middleware and handler
+- Role-based authorization via `[RolesAuthorize]` (User, Admin)
+- Protected REST endpoints and SignalR hub (/hub/tasks)
 
-## Key Components
+## Key components
 
-### 1. JWT Token Generation and Validation
+1) JWT token generation and validation
+- Token issued by `AuthController` using `ITokenFactory` after successful login.
+- Token includes username and roles; signed with `AppSettings:Token` secret.
+- Validation performed by the custom JWT middleware and authentication handler configured in Program.cs.
 
-- **Token Generation**: A token is generated upon successful user login and is included in the response.
-- **Token Validation**: The token is validated for each request to protected endpoints to ensure its integrity and authenticity.
+2) Role-based authorization
+- Roles: `User`, `Admin`.
+- `[RolesAuthorize]` attribute on controllers/actions enforces role checks.
 
-### 2. Role-Based Authorization
+3) Program.cs configuration
+- JSON: camelCase + string enums; reference cycles ignored.
+- CORS: policy "client" for Vite dev ports.
+- Services: Swagger, EF Core DB, DI, JWT auth, SignalR hub.
+- Pipeline: error handling, seeding, Swagger, CORS, authentication/authorization, JWT middleware, controllers, SignalR at `/hub/tasks`.
 
-- Roles such as Admin and User are defined and assigned to users.
-- Specific API endpoints are protected using custom attributes that check for the necessary roles.
+## Endpoints (auth + protected)
 
-### 3. Configuration in Program.cs
+Auth
+- POST `/api/auth/register` → register a user (body: username, email, password, role)
+- POST `/api/auth/login` → returns `{ token }`
 
-The following configurations are used for setting up JWT authentication and role-based authorization:
+Protected (require roles)
+- GET `/api/users` → [User, Admin]
+- GET `/api/tasks?status=&assignee=&search=` → [User, Admin]
+- POST `/api/tasks` → [User, Admin]
+- PUT `/api/tasks/{id}` → [User, Admin]
+- DELETE `/api/tasks/{id}` → [Admin]
 
-- **Service Registration**: Register required service extentions including controllers, Swagger, database context, dependency injection, and JWT authentication.
-- **Middleware Setup**: Configure the middleware pipeline to handle errors, seed the database, apply JWT authentication, and set up Swagger documentation.
+Example: login request/response
 
-## Endpoints
-
-**POST** `/api/auth/login`  
-This endpoint allows users to log in by providing their username and password. If the credentials are valid, a JWT token is returned.
-
-#### Request
-
-- **Method**: POST
-- **URL**: `/api/auth/login`
-- **Body**:
-
-  ```json
-  {
-    "username": "yourusername",
-    "password": "yourpassword"
-  }
-  ```
-
-#### Response
-
-- **Success (200 OK)**:
-
-  ```json
-  {
-    "token": "your.jwt.token"
-  }
-  ```
-
-- **Unauthorized (401 Unauthorized)**:
-
-  ```json
-  {
-    "title": "Unauthorized",
-    "status": 401
-  }
-  ```
-
----
-
-**GET** `/api/auth/admin-endpoint`  
-This endpoint is accessible only by users with the `Admin` role.
-
-#### Response
-
-- **Success (200 OK)**:
-
-  ```json
-  {
-    "message": "Admin access granted."
-  }
-  ```
-
-- **Unauthorized (401 Unauthorized, 403 Forbidden)**
-
----
-
-**GET** `/api/auth/admin-or-user-endpoint`  
-This endpoint is accessible by users with either the `Admin` or `User` role.
-
-#### Response
-
-- **Success (200 OK)**:
-
-  ```json
-  {
-    "message": "Admin Or User access granted."
-  }
-  ```
-
-- **Unauthorized (401 Unauthorized, 403 Forbidden)**
-
----
-
-**GET** `/api/auth/user-endpoint`  
-This endpoint is accessible only by users with the `User` role.
-
-#### Response
-
-- **Success (200 OK)**:
-
-  ```json
-  {
-    "message": "User access granted."
-  }
-  ```
-
-- **Unauthorized (401 Unauthorized, 403 Forbidden)**
-
-## Configure the Environment
-
-1. **Set the JWT Secret Key**  
-    The application uses an environment variable for the JWT secret key. You can configure this using the `setx` command on Windows.
-
-   - Run the following command in your command prompt:
-
-     ```bash
-     setx AppSettings__Token "your-secret-key"
-     ```
-
-   After setting it, restart your command prompt or system for the changes to take effect. This key will be used to sign and validate JWT tokens.
-
-2. **Database Connection Strings**  
-   Change your database connection in `appsettings.json`:
-
-   ```json
-   {
-     "ConnectionStrings": {
-       "DevDB": "YourDatabaseConnectionString"
-     }
-   }
-   ```
-
-3. **Apply the database migrations**
-
-   ```sh
-   dotnet ef database update
-   ```
-
-## Database Requirements
-
-The application uses Entity Framework Core for data access with a code-first approach. Below are the essential database components:
-
-1. **User Table**: Stores user details such as username and password hash.
-2. **Role Table**: Defines different roles available in the application (e.g., Admin, User).
-3. **UserRole Table**: Maps users to their respective roles.
-
-### Example Database Schema
-
-```sql
-CREATE TABLE Users (
-    Id INT PRIMARY KEY IDENTITY,
-    Username NVARCHAR(50) NOT NULL,
-    PasswordHash NVARCHAR(255) NOT NULL
-);
-
-CREATE TABLE Roles (
-    Id INT PRIMARY KEY IDENTITY,
-    Name NVARCHAR(50) NOT NULL
-);
-
-CREATE TABLE UserRoles (
-    UserId INT FOREIGN KEY REFERENCES Users(Id),
-    RoleId INT FOREIGN KEY REFERENCES Roles(Id),
-    PRIMARY KEY (UserId, RoleId)
-);
+Request body
+```json
+{ "username": "admin@example.com", "password": "password" }
 ```
 
-## Usage
-
-To run the project, use the following command:
-
-```sh
-dotnet run
+Response body
+```json
+{ "token": "<jwt>" }
 ```
 
-### Seeded User Credentials
+Notes
+- All JSON is camelCase; enums are strings.
+- SignalR clients pass the JWT via `access_token` when connecting to `/hub/tasks`.
 
-The application comes with pre-seeded users for testing purposes. You can log in using the following credentials:
+## Configure the environment
 
-- **Username**: `admin`
-- **Password**: `password`
+1) JWT secret key
+- Dev secret can be set in `appsettings.json` under `AppSettings:Token`.
+- Or set via environment variable (Windows PowerShell):
+```powershell
+setx AppSettings__Token "your-secret-key"
+```
+(Restart the terminal for it to take effect.)
 
-- **Username**: `user`
-- **Password**: `password`
+2) Database
+- Development uses InMemory by default.
+- To use SQL Server, set `UseInMemory=false` and configure `ConnectionStrings:DevDB` in `appsettings.json`.
+- Apply migrations only when using SQL Server:
+```powershell
+dotnet ef database update
+```
 
-You can use these credentials to access the different API endpoints after starting the application.
+3) Swagger
+- http://localhost:5099/swagger/index.html
 
-### API Documentation
+## Seeded users
 
-The application uses Swagger for API documentation. Once the application is running, you can access the Swagger UI at the following address:
+- admin@example.com / password (Admin)
+- user@example.com / password (User)
 
-- **Swagger URL**: [http://localhost:5088/swagger/index.html](http://localhost:5088/swagger/index.html)
-
-### Testing the API
-
-You can test the API using Swagger or any API testing tool such as Postman.
-
-#### Using Swagger
-
-1. Run the application.
-2. Open your browser and navigate to [http://localhost:5088/swagger/index.html](http://localhost:5088/swagger/index.html).
-3. Use the Swagger UI to explore and test the API endpoints.
-4. [Demo using swagger](https://drive.google.com/file/d/1zOx5n3BofZh5oyEAlYdue0L47kwckyqB/view?usp=sharing).
-
-#### Using Postman or Other Tools
-
-If you prefer to use Postman or other tools, follow these steps:
-
-1. Open Postman (or any API tool).
-2. Use the **POST** method to authenticate at the `/login` endpoint:
-
-   - **URL**: `http://localhost:5088/api/auth/login`
-   - **Body**:
-
-     ```json
-     {
-       "username": "admin",
-       "password": "password"
-     }
-     ```
-
-3. Copy the returned JWT token from the response.
-
-4. For protected endpoints (e.g., `GET /admin-endpoint`), set the `Authorization` header:
-
-   - **Header**: `Authorization: Bearer your.jwt.token`
-
-5. Send the request to the desired endpoint.
+Use these to login, then call protected endpoints with `Authorization: Bearer <token>`.
