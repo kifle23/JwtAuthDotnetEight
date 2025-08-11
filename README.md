@@ -3,7 +3,7 @@
 Full‑stack Task Management System:
 - Backend: ASP.NET Core 8 (Web API, EF Core, JWT auth, SignalR)
 - Frontend: React (Vite + TypeScript + Tailwind)
-- Demo: [Demo.webm](./Demo.webm)
+- [Demo](https://drive.google.com/file/d/1j5p2QaAMOS86OGBATjCQ9LiAFiqQWVM-/view?usp=drive_link)
 
 ## Backend
 
